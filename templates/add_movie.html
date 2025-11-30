@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Додати фільм</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; max-width: 500px; margin: 0 auto; background: #f9f9f9; }
+        form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; cursor: pointer; margin-top: 20px; font-size: 16px; border-radius: 4px; }
+        button:hover { background: #218838; }
+        .row-inputs { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <h2>🎬 Новий фільм та Зала</h2>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <label>Назва фільму:</label>
+        <input type="text" name="title" required placeholder="Наприклад: Дюна">
+
+        <label>URL Постера:</label>
+        <input type="text" name="poster_url" required placeholder="https://...">
+
+        <label>Ціна квитка (грн):</label>
+        <input type="number" name="price" value="150" required>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        <h3>Налаштування зали</h3>
+
+        <div class="row-inputs">
+            <div style="flex:1">
+                <label>Кількість рядів:</label>
+                <input type="number" name="rows" value="5" min="1" max="20" required>
+            </div>
+            <div style="flex:1">
+                <label>Місць у ряду:</label>
+                <input type="number" name="seats" value="8" min="1" max="20" required>
+            </div>
+        </div>
+
+        <button type="submit">Створити фільм та Залу</button>
+    </form>
+
+    <br><a href="/" style="text-decoration: none; color: #555;">← Назад на головну</a>
+</body>
+</html>

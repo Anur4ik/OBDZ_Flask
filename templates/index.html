@@ -1,44 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
-    <title>Афіша</title>
+    <meta charset="UTF-8">
+    <title>Афіша Кінотеатру</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .header { background: white; padding: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;}
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .card { background: white; border-radius: 10px; overflow: hidden; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.2s; text-decoration: none; color: black; display: block;}
-        .card:hover { transform: translateY(-5px); }
-        .card img { width: 100%; height: 300px; object-fit: cover; }
-        .card h3 { margin: 10px 0; }
-        .price { background: #333; color: white; padding: 5px; font-size: 0.9em; border-radius: 15px; }
-        .btn { padding: 5px 10px; text-decoration: none; border-radius: 4px; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f0f2f5; }
+
+        /* Стиль шапки */
+        .header {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo { font-size: 24px; font-weight: bold; color: #333; text-decoration: none; }
+
+        .user-controls { display: flex; align-items: center; gap: 15px; }
+        .balance { font-weight: bold; color: #2e7d32; background: #e8f5e9; padding: 5px 10px; border-radius: 15px; }
+
+        /* Кнопки */
+        .btn { text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 500; transition: 0.2s; }
+        .btn-logout { background: #ffebee; color: #c62828; }
+        .btn-logout:hover { background: #ffcdd2; }
+
+        /* --- СТИЛІ ДЛЯ АДМІНКИ --- */
+        .admin-badge {
+            background: #333; color: #fff; padding: 2px 6px;
+            border-radius: 4px; font-size: 0.7em; vertical-align: middle;
+            margin-right: 5px;
+        }
+        .admin-btn { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .admin-btn:hover { background: #bbdefb; }
+        .admin-btn-add { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .admin-btn-add:hover { background: #c8e6c9; }
+
+        /* Сітка фільмів */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+        .card {
+            background: white; border-radius: 12px; overflow: hidden;
+            text-decoration: none; color: inherit; display: block;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .card img { width: 100%; height: 320px; object-fit: cover; }
+        .card-info { padding: 15px; text-align: center; }
+        .price-tag { background: #333; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <h2>🍿 Cinema</h2>
-        <div>
+        <a href="/" class="logo">🍿 MyCinema</a>
+
+        <div class="user-controls">
+
             {% if is_admin %}
-                <span style="color:red; font-weight:bold;">ADMIN MODE</span>
-                <a href="/admin/add_movie" class="btn" style="background:green; color:white;">+ Фільм</a>
-                <a href="/admin/dump" class="btn" style="background:blue; color:white;">Логи</a>
+                <div style="border-right: 2px solid #eee; padding-right: 15px; display: flex; gap: 10px;">
+
+                    <a href="/admin/add_movie" class="btn admin-btn-add">+ Фільм</a>
+                    <a href="/admin/dump" class="btn admin-btn">📊 Логи БД</a>
+                </div>
             {% endif %}
-            <span>👤 {{ username }} ({{ balance }} грн)</span>
-            <a href="/logout" class="btn" style="background:#ddd;">Вийти</a>
+            <div>
+                👤 <b>{{ username }}</b>
+                <span class="balance">{{ balance }} грн</span>
+            </div>
+
+            <a href="/logout" class="btn btn-logout">Вийти</a>
         </div>
     </div>
 
-    <div class="grid">
+   <div class="grid">
         {% for m in movies %}
-        <a href="/movie/{{ m[0] }}" class="card">
-            <img src="{{ m[2] }}" alt="{{ m[1] }}">
-            <div>
-                <h3>{{ m[1] }}</h3>
-                <span class="price">{{ m[3] }} грн</span>
-                <br><br>
-            </div>
-        </a>
+        <div class="card" style="position: relative;"> {% if is_admin %}
+            <form action="/admin/delete_movie" method="POST" onsubmit="return confirm('Ви точно хочете видалити цей фільм?');" style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+                <input type="hidden" name="movie_id" value="{{ m[0] }}">
+                <button type="submit" style="background: red; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">🗑️</button>
+            </form>
+            {% endif %}
+
+            <a href="/movie/{{ m[0] }}" style="text-decoration: none; color: inherit;">
+                <img src="{{ m[2] }}" alt="{{ m[1] }}">
+                <div class="card-info">
+                    <h3 style="margin: 0 0 10px 0;">{{ m[1] }}</h3>
+                    <span class="price-tag">{{ m[3] }} грн</span>
+                </div>
+            </a>
+        </div>
+
         {% endfor %}
     </div>
+
 </body>
 </html>
