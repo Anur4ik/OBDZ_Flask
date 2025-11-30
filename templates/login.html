@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Вхід</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #eee; }
+        form { background: white; display: inline-block; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input { display: block; margin: 10px 0; padding: 8px; width: 200px; }
+        button { background: #007bff; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}
+    {% endwith %}
+
+    {% if mode == 'login' %}
+        <h2>Вхід</h2>
+        <form method="POST" action="/login">
+            <input type="text" name="username" placeholder="Логін" required>
+            <input type="password" name="password" placeholder="Пароль" required>
+            <button type="submit">Увійти</button>
+        </form>
+        <p><a href="/register">Реєстрація (+5000 грн)</a></p>
+    {% else %}
+        <h2>Реєстрація</h2>
+        <form method="POST" action="/register">
+            <input type="text" name="username" placeholder="Новий логін" required>
+            <input type="password" name="password" placeholder="Новий пароль" required>
+            <button type="submit">Створити акаунт</button>
+        </form>
+        <p><a href="/login">Назад</a></p>
+    {% endif %}
+</body>
+</html>
