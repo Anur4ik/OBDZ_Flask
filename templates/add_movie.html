@@ -14,11 +14,6 @@
 </head>
 <body>
     <h2>🎬 Новий фільм та Зала</h2>
-
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}
-    {% endwith %}
-
     <form method="POST">
         <label>Назва фільму:</label>
         <input type="text" name="title" required placeholder="Наприклад: Дюна">

@@ -5,8 +5,6 @@
     <title>Афіша Кінотеатру</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f0f2f5; }
-
-        /* Стиль шапки */
         .header {
             background: white;
             padding: 15px 30px;
@@ -17,18 +15,12 @@
             align-items: center;
             margin-bottom: 30px;
         }
-
         .logo { font-size: 24px; font-weight: bold; color: #333; text-decoration: none; }
-
         .user-controls { display: flex; align-items: center; gap: 15px; }
-        .balance { font-weight: bold; color: #2e7d32; background: #e8f5e9; padding: 5px 10px; border-radius: 15px; }
-
-        /* Кнопки */
+        .balance { font-weight: bold; color: #2e7d32; padding: 5px 10px; border-radius: 15px; }
         .btn { text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 500; transition: 0.2s; }
         .btn-logout { background: #ffebee; color: #c62828; }
         .btn-logout:hover { background: #ffcdd2; }
-
-        /* --- СТИЛІ ДЛЯ АДМІНКИ --- */
         .admin-badge {
             background: #333; color: #fff; padding: 2px 6px;
             border-radius: 4px; font-size: 0.7em; vertical-align: middle;
@@ -38,8 +30,6 @@
         .admin-btn:hover { background: #bbdefb; }
         .admin-btn-add { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
         .admin-btn-add:hover { background: #c8e6c9; }
-
-        /* Сітка фільмів */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
         .card {
             background: white; border-radius: 12px; overflow: hidden;
@@ -56,9 +46,7 @@
 
     <div class="header">
         <a href="/" class="logo">🍿 MyCinema</a>
-
         <div class="user-controls">
-
             {% if is_admin %}
                 <div style="border-right: 2px solid #eee; padding-right: 15px; display: flex; gap: 10px;">
 
@@ -67,7 +55,7 @@
                 </div>
             {% endif %}
             <div>
-                👤 <b>{{ username }}</b>
+                👤 <b>{{ username }}:</b>
                 <span class="balance">{{ balance }} грн</span>
             </div>
 
@@ -77,11 +65,16 @@
 
    <div class="grid">
         {% for m in movies %}
-        <div class="card" style="position: relative;"> {% if is_admin %}
-            <form action="/admin/delete_movie" method="POST" onsubmit="return confirm('Ви точно хочете видалити цей фільм?');" style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-                <input type="hidden" name="movie_id" value="{{ m[0] }}">
-                <button type="submit" style="background: red; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">🗑️</button>
-            </form>
+        <div class="card" style="position: relative;">
+            {% if is_admin %}
+            <div style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 5px;">
+                <a href="/admin/edit_movie/{{ m[0] }}" style="background: #007bff; color: white; padding: 5px 8px; border-radius: 5px; text-decoration: none; font-weight: bold;">✏️</a>
+                <form action="/admin/delete_movie" method="POST" onsubmit="return confirm('Видалити цей фільм?');" style="margin:0;">
+                    <input type="hidden" name="movie_id" value="{{ m[0] }}">
+                    <button type="submit" style="background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-weight: bold;">🗑️</button>
+                </form>
+
+            </div>
             {% endif %}
 
             <a href="/movie/{{ m[0] }}" style="text-decoration: none; color: inherit;">

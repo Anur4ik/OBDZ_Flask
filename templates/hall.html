@@ -3,49 +3,90 @@
 <head>
     <title>Зал</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #222; color: white; }
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; }
         .screen { background: white; height: 30px; margin: 20px auto; width: 80%; box-shadow: 0 0 20px white; border-radius: 50%; }
-        .grid { display: grid; grid-template-columns: repeat(6, 50px); gap: 10px; justify-content: center; margin-top: 30px; }
-        .seat { padding: 15px; border-radius: 5px; cursor: pointer; color: black; font-weight: bold; }
-        .free { background: #90ee90; }
-        .booked { background: #ff4444; }
-        .sold { background: #555; cursor: not-allowed; color: #888; border: 1px solid #777; }
+        .grid { display: grid; grid-template-columns: repeat({{ cols }}, 50px); gap: 10px; justify-content: center; margin-top: 30px; }
+        .seat {
+            height: 40px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+            font-size: 11px; /* Трохи менший шрифт, щоб влізло "1-1" */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            font-weight: bold;
+        }
+        .selected {
+            background-color: #f1c40f !important;
+        }
 
+        .seat:hover:not(.sold) {
+            transform: scale(1.15);
+            z-index: 2;
+        }
+
+        /* Статуси */
+        .free {
+            background-color: #444;
+            color: #fff;
+            box-shadow: 0 0 5px rgba(255,255,255,0.1);
+        }
+        .free:hover {
+            background-color: #2ecc71;
+            box-shadow: 0 0 15px #2ecc71;
+        }
+
+        .booked {
+            background-color: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+        }
+
+        .sold {
+            background-color: #ffffff;
+            color: #000;
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .screen-container {perspective: 800px; margin: 30px auto; width: 300px;display: flex;
+            justify-content: center;
+        }
+        .sold { background: #555; cursor: not-allowed; color: #888; border: 1px solid #777; }
         .modal { position: fixed; bottom: 0; left: 0; width: 100%; background: white; color: black; padding: 20px; display: none; }
         button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <a href="/" style="color: white; float: left; margin: 20px;">← Назад</a>
-
+    <a href="/" style="color: white; float: left; ">← Назад</a>
     <h1>{{ info[1] }} <small>({{ info[2] }} грн)</small></h1>
-    {% with msgs = get_flashed_messages() %}
-        {% if msgs %}<div style="background:orange; color:black; padding:10px;">{{ msgs[0] }}</div>{% endif %}
-    {% endwith %}
-
     <div class="screen"></div>
-
-    <div class="grid">
+   <div class="grid">
         {% for s in seats %}
-            <div class="seat {{ s[3] }}" onclick="clickSeat({{ s[0] }}, '{{ s[3] }}')">
+            <div id="{{s[0]}}" class="seat {{ s[3] }}" onclick="clickSeat({{ s[0] }}, '{{ s[3] }}')">
                 {{ s[1] }}-{{ s[2] }}
             </div>
         {% endfor %}
     </div>
 
-    <form id="panel" class="modal" action="/action" method="POST">
+   <form id="panel" class="modal" action="/action" method="POST">
         <h3>Обрано місце ID: <span id="sid_txt"></span></h3>
         <input type="hidden" name="movie_id" value="{{ info[0] }}">
         <input type="hidden" name="seat_id" id="inp_seat">
-        <input type="hidden" name="type" id="inp_type">
-
-        <button type="button" id="btn_book" style="background:lightblue;" onclick="sub('book')">Забронювати</button>
-        <button type="button" id="btn_buy" style="background:orange;" onclick="sub('buy')">Купити</button>
+        <button type="submit" style="background:orange;">Купити квиток</button>
+        <button type="button" onclick="closePanel()" style="background:#eee; color:#333;">Скасувати</button>
     </form>
 
     <script>
         function clickSeat(id, status) {
             if (status === 'sold') return;
+            document.querySelectorAll('.selected').forEach(function(el) {
+                el.classList.remove('selected');
+            });
+            document.getElementById(id).classList.add('selected');
             document.getElementById('panel').style.display = 'block';
             document.getElementById('sid_txt').innerText = id;
             document.getElementById('inp_seat').value = id;
@@ -61,9 +102,12 @@
                 bBuy.innerText = "Купити";
             }
         }
-        function sub(type) {
-            document.getElementById('inp_type').value = type;
-            document.getElementById('panel').submit();
+        function closePanel() {
+            document.getElementById('panel').style.display = 'none';
+            // Приховуємо виділення при закритті
+            document.querySelectorAll('.selected').forEach(function(el) {
+                el.classList.remove('selected');
+            });
         }
     </script>
 </body>

@@ -22,7 +22,6 @@ CREATE TABLE bookings (
     user_id INT REFERENCES users(id),
     movie_id INT REFERENCES movies(id),
     seat_id INT REFERENCES seats(id),
-    is_paid BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(movie_id, seat_id)
 );
@@ -39,36 +38,29 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE book_seat_proc(p_user_id INT, p_movie_id INT, p_seat_id INT)
-LANGUAGE plpgsql AS $$
-BEGIN
-    INSERT INTO bookings (user_id, movie_id, seat_id, is_paid)
-    VALUES (p_user_id, p_movie_id, p_seat_id, FALSE);
-END;
-$$;
+
+
 CREATE OR REPLACE PROCEDURE buy_ticket_proc(p_user_id INT, p_movie_id INT, p_seat_id INT)
 LANGUAGE plpgsql AS $$
 DECLARE
     v_price DECIMAL;
     v_balance DECIMAL;
-    v_paid BOOLEAN;
+    v_exists INT;
 BEGIN
+    SELECT 1 INTO v_exists FROM bookings
+    WHERE movie_id = p_movie_id AND seat_id = p_seat_id;
+
+    IF v_exists IS NOT NULL THEN
+        RAISE EXCEPTION 'Це місце вже куплено!';
+    END IF;
 
     SELECT price INTO v_price FROM movies WHERE id = p_movie_id;
     SELECT balance INTO v_balance FROM users WHERE id = p_user_id;
 
-    SELECT is_paid INTO v_paid FROM bookings
-    WHERE movie_id = p_movie_id AND seat_id = p_seat_id;
-
-    IF v_paid IS TRUE THEN RAISE EXCEPTION 'Вже куплено!'; END IF;
-
     IF v_balance >= v_price THEN
         UPDATE users SET balance = balance - v_price WHERE id = p_user_id;
-
-        INSERT INTO bookings (user_id, movie_id, seat_id, is_paid)
-        VALUES (p_user_id, p_movie_id, p_seat_id, TRUE)
-        ON CONFLICT (movie_id, seat_id)
-        DO UPDATE SET is_paid = TRUE, user_id = p_user_id;
+        INSERT INTO bookings (user_id, movie_id, seat_id)
+        VALUES (p_user_id, p_movie_id, p_seat_id);
     ELSE
         RAISE EXCEPTION 'Недостатньо грошей!';
     END IF;
@@ -108,17 +100,67 @@ BEGIN
     DELETE FROM movies WHERE id = p_movie_id;
 END;
 $$;
+CREATE OR REPLACE PROCEDURE edit_movie_proc(
+    p_id INT,
+    p_title VARCHAR,
+    p_poster TEXT,
+    p_price DECIMAL
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE movies
+    SET title = p_title,
+        poster_url = p_poster,
+        price = p_price
+    WHERE id = p_id;
+END;
+$$;
 
 
 CREATE OR REPLACE FUNCTION log_booking_func() RETURNS TRIGGER AS $$
+DECLARE
+    v_movie_title VARCHAR;
 BEGIN
+SELECT title INTO v_movie_title FROM movies WHERE id = NEW.movie_id;
     IF (TG_OP = 'INSERT') THEN
-        INSERT INTO audit_log (action_type, details) VALUES ('BOOKING', 'Seat ' || NEW.seat_id);
-    ELSIF (TG_OP = 'UPDATE' AND NEW.is_paid = TRUE) THEN
-        INSERT INTO audit_log (action_type, details) VALUES ('PURCHASE', 'Seat ' || NEW.seat_id);
+        INSERT INTO audit_log (action_type, details)
+       VALUES ('PURCHASE', 'Фільм: ' || COALESCE(v_movie_title, 'Невідомий ID:' || NEW.movie_id) || ', Місце ID: ' || NEW.seat_id);
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_audit_bookings AFTER INSERT OR UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION log_booking_func();
+
+
+CREATE OR REPLACE FUNCTION log_movies_func() RETURNS TRIGGER AS $$
+DECLARE
+    change_details TEXT;
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO audit_log (action_type, details)
+        VALUES ('MOVIE_ADD', 'Додано фільм: "' || NEW.title || '"');
+    ELSIF (TG_OP = 'UPDATE') THEN
+        change_details := 'Змінено фільм "' || OLD.title || '":';
+        IF OLD.title <> NEW.title THEN
+            change_details := change_details || ' [Назва: ' || OLD.title || ' -> ' || NEW.title || ']';
+        END IF;
+        IF OLD.price <> NEW.price THEN
+            change_details := change_details || ' [Ціна: ' || OLD.price || ' -> ' || NEW.price || ']';
+        END IF;
+        IF OLD.poster_url <> NEW.poster_url THEN
+            change_details := change_details || ' [Постер оновлено]';
+        END IF;
+        INSERT INTO audit_log (action_type, details)
+        VALUES ('MOVIE_EDIT', change_details);
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO audit_log (action_type, details)
+        VALUES ('MOVIE_DEL', 'Видалено фільм: "' || OLD.title || '" (ID: ' || OLD.id || ')');
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER trg_audit_movies
+AFTER INSERT OR UPDATE OR DELETE ON movies
+FOR EACH ROW
+EXECUTE FUNCTION log_movies_func();

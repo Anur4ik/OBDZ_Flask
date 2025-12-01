@@ -79,7 +79,6 @@ def add_movie():
 
 @app.route('/admin/delete_movie', methods=['POST'])
 def delete_movie():
-    # 1. Перевірка на адміна
     if 'user_id' not in session or not session.get('is_admin'):
         return "Тільки для адмінів!"
 
@@ -107,76 +106,81 @@ def open_movie_hall(movie_id):
     cur.execute("SELECT id, title, price FROM movies WHERE id = %s", (movie_id,))
     info = cur.fetchone()
     cur.execute("""
-        SELECT s.id, s.row_num, s.seat_num, 
-               CASE WHEN b.is_paid THEN 'sold' WHEN b.id IS NOT NULL THEN 'booked' ELSE 'free' END
-        FROM seats s 
-        LEFT JOIN bookings b ON s.id = b.seat_id AND b.movie_id = %s
-        WHERE s.movie_id = %s  
-        ORDER BY s.row_num, s.seat_num
-    """, (movie_id, movie_id))
+            SELECT s.id, s.row_num, s.seat_num, 
+                   CASE WHEN b.id IS NOT NULL THEN 'sold' ELSE 'free' END
+            FROM seats s 
+            LEFT JOIN bookings b ON s.id = b.seat_id AND b.movie_id = %s
+            WHERE s.movie_id = %s
+            ORDER BY s.row_num, s.seat_num
+        """, (movie_id, movie_id))
 
     seats = cur.fetchall()
+    max_cols=0
+    for s in seats:
+        current_seat_num = s[2]
+        if current_seat_num > max_cols:
+            max_cols = current_seat_num
     conn.close()
-    return render_template('hall.html', seats=seats, info=info)
+    return render_template('hall.html', seats=seats, info=info,cols=max_cols)
 @app.route('/action', methods=['POST'])
 def action():
     if 'user_id' not in session: return redirect(url_for('login'))
-    conn = get_db(); cur = conn.cursor()
+    conn = get_db()
+    cur = conn.cursor()
     try:
-        proc = "book_seat_proc" if request.form['type'] == 'book' else "buy_ticket_proc"
-        cur.execute(f"CALL {proc}(%s, %s, %s)", (session['user_id'], request.form['movie_id'], request.form['seat_id']))
+        cur.execute("CALL buy_ticket_proc(%s, %s, %s)",(session['user_id'], request.form['movie_id'], request.form['seat_id']))
         conn.commit()
-        flash('Успішно!', 'success')
+        flash('Квиток успішно куплено!', 'success')
     except Exception as e:
-        conn.rollback(); flash(str(e), 'error')
-    finally: conn.close()
+        conn.rollback()
+        flash(str(e), 'error')
+    finally:
+        conn.close()
     return redirect(url_for('open_movie_hall', movie_id=request.form['movie_id']))
 
+
+@app.route('/admin/edit_movie/<int:movie_id>', methods=['GET', 'POST'])
+def edit_movie(movie_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return "Тільки для адмінів!"
+    conn = get_db()
+    cur = conn.cursor()
+    if request.method == 'GET':
+        cur.execute("SELECT id, title, poster_url, price FROM movies WHERE id = %s", (movie_id,))
+        movie = cur.fetchone()
+        conn.close()
+        if not movie:
+            return "Фільм не знайдено"
+        return render_template('edit_movie.html', movie=movie)
+    try:
+        title = request.form['title']
+        poster = request.form['poster_url']
+        price = request.form['price']
+        cur.execute("CALL edit_movie_proc(%s, %s, %s, %s)", (movie_id, title, poster, price))
+        conn.commit()
+        flash('Фільм успішно оновлено!', 'success')
+        return redirect(url_for('index'))
+    except Exception as e:
+        conn.rollback()
+        flash(f'Помилка: {e}', 'error')
+        return redirect(url_for('index'))
+    finally:
+        conn.close()
 @app.route('/admin/dump')
 def dump_db():
     if not session.get('is_admin'): return "Access Denied"
-    conn = get_db();
+    conn = get_db()
     cur = conn.cursor()
-
-    # Виводимо останні дії з аудит-лога
     cur.execute("SELECT details,action_type,log_time FROM audit_log ORDER BY log_time DESC LIMIT 20")
     logs = cur.fetchall()
-
-    # Виводимо всі бронювання
-    cur.execute("""
-        SELECT u.username, m.title, s.seat_num, b.is_paid 
-        FROM bookings b JOIN users u ON b.user_id=u.id 
-        JOIN movies m ON b.movie_id=m.id JOIN seats s ON b.seat_id=s.id
-    """)
-    books = cur.fetchall()
     conn.close()
-
-    # Простий HTML прямо тут, щоб не створювати файл
-    html = "<h1>Audit Log</h1><pre>" + "\n".join([str(r) for r in logs]) + "</pre>"
-    html += "<h1>Bookings</h1><pre>" + "\n".join([str(r) for r in books]) + "</pre>"
+    lines = []
+    for r in logs:
+        date_str = r[2].strftime("%Y-%m-%d %H:%M:%S")
+        lines.append(f"{date_str} | {r[1]} | {r[0]}")
+    html = "<h1>Audit Log</h1><pre>" + "\n".join(lines) + "</pre>"
     html += "<a href='/'>Back</a>"
     return html
-# @app.route("/dump")
-# def dump_entries():
-#     conn = get_db()
-#     cursor = conn.cursor()
-#     cursor.execute('select id, date, title, content from entries order by date')
-#     rows = cursor.fetchall()
-#     output = ""
-#     for r in rows:
-#         debug(str(dict(r)))
-#         output += str(dict(r))
-#         output += "\n"
-#     return "SQL dump below:\n<pre>" + output + "</pre>"
-
-# def dump_entries():
-#     conn = get_db()
-#     cur = conn.cursor()
-#     cur.execute("select * from entries")
-#     rows = cur.fetchall()
-#     print("Here are the entries:")
-#     print(rows)
-
 def connect_db():
     debug("Connecting to DB.")
     conn = psycopg2.connect(host="localhost", user="postgres", password="admin", dbname="cinema",
