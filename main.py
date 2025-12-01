@@ -206,16 +206,15 @@ def init_db():
         cur.execute(alltext)
     conn.commit()
     print("Initialized the database.")
-@app.cli.command('populate')
-def populate_db():
+@app.cli.command('sample-db')
+def sample_db():
     conn = get_db()
     cur = conn.cursor()
-    with current_app.open_resource("populate.sql") as file:
+    with current_app.open_resource("sample_data.sql") as file:
         alltext = file.read()
         cur.execute(alltext)
     conn.commit()
-    print("Populated DB with sample data.")
-    # dump_entries()
+    print("DB with sample data.")
 
 def debug(s):
     if app.config['DEBUG']:

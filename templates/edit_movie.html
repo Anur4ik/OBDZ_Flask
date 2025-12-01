@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Редагувати фільм</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; max-width: 500px; margin: 0 auto; background: #f4f4f4; }
+        form { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; cursor: pointer; margin-top: 25px; font-size: 16px; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        .preview { margin-top: 20px; text-align: center; }
+        .preview img { max-width: 100px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">✏️ Редагувати: {{ movie[1] }}</h2>
+    <form method="POST">
+        <label>Назва фільму:</label>
+        <input type="text" name="title" value="{{ movie[1] }}" required>
+        <label>URL Постера:</label>
+        <input type="text" name="poster_url" value="{{ movie[2] }}" required>
+        <label>Ціна квитка (грн):</label>
+        <input type="number" name="price" value="{{ movie[3] }}" required>
+        <button type="submit">Зберегти зміни</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="/" style="color: #555; text-decoration: none;">← Скасувати і повернутися</a>
+    </div>
+</body>
+</html>
