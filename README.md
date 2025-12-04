@@ -89,17 +89,19 @@ CinemaProject/
 ![Головна сторінка](screenshots/img.png)
 
 ### Логін та Реєстрація
-![Логін](screenshots/img_7.png)
+![Логін](screenshots/img7.png)
 
 ### Вибір місця в залі
-![Зал](screenshots/img_1.png)
-![Вибір місця](screenshots/img_2.png)
-![Покупка місця](screenshots/img_3.png)
+![Зал](screenshots/img1.png)
+![Вибір місця](screenshots/img2.png)
+![Покупка місця](screenshots/img3.png)
 
 ### Додавання фільму
-![Додавання фільму](screenshots/img_4.png)
+![Додавання фільму](screenshots/img4.png)
 ### Редагування фільму
-![Редагування фільму](screenshots/img_5.png)
+![Редагування фільму](screenshots/img5.png)
+
 
 ### Логи бази даних (Audit Log)
-![Логи БД](screenshots/img_6.png)
+
+![Логи БД](screenshots\img6.png)
